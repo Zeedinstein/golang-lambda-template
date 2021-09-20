@@ -49,7 +49,7 @@ package:
 
 functions:
   api:
-    handler: bin/main
+    handler: bin/api
     events:
       - http:
           path: /
@@ -57,6 +57,13 @@ functions:
       - http:
           path: /{proxy+}
           method: ANY
+
+  cron:
+    handler: bin/cron
+    events:
+      - schedule:
+          rate: rate(1 minute)
+          enabled: false
 
 resources:
   Resources:
