@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Users Service
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+    Environment:
+      Variables:
+        REGION: eu-west-1
+  Api:
+    OpenApiVersion: 3.0.1
+    Cors: '''*'''
+Parameters:
+  Stage:
+    Description: Environment to deploy
+    Type: String
+    Default: dev
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name:
+        Fn::Sub: users-api-gateway-${Stage}
+      StageName:
+        Ref: Stage
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: users-${Stage}
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 3
+        WriteCapacityUnits: 3
+  UsersAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: users-api-${Stage}
+      CodeUri: UsersAPIFunction
+      Handler: api
+      Runtime: go1.x
+      Tracing: Active
+      Events:
+        AllEvents:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: any
+            RestApiId:
+              Ref: ApiGatewayApi
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UsersTable
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Fn::Sub: users-${Stage}
+Outputs:
+  UsersAPI:
+    Description: API Gateway endpoint URL for Prod environment for First Function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/Users/
+  UsersFunction:
+    Description: First Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - UsersAPIFunction
+      - Arn
+  UsersFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      Fn::GetAtt:
+      - UsersAPIFunction
+      - Arn

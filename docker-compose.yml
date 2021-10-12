@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-users
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+    networks:
+      dynamodb-net:
+        aliases:
+          - dynamodb.local
+
+  dynamodb.admin:
+    image: aaronshaf/dynamodb-admin
+    container_name: dynamodb-admin-users
+    ports:
+      - 8001:8001
+    environment: 
+      - DYNAMO_ENDPOINT=http://dynamodb.local:8000
+      - AWS_REGION=eu-west-1
+    networks:
+      - dynamodb-net
+    
+networks:
+  dynamodb-net:
+    driver: bridge
